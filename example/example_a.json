@@ -1,10 +1,7 @@
 {
   "settings": {
     "seed": 123456789,
-    "duration": {
-      "seconds": 20,
-      "segments": 100
-    },
+    "duration": 20,
     "breath_pause_length": 750
   },
   "segments": [
@@ -21,7 +18,8 @@
     {
       "text": "c",
       "audio": "c.mp3",
-      "weight": 3
+      "weight": 3,
+      "cool_down": 2
     }
   ]
 }

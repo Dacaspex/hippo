@@ -3,6 +3,7 @@ input/
 .idea/
 virtualenv/
 export.*
+output.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
