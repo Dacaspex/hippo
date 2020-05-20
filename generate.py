@@ -1,28 +1,13 @@
 import json
-import random
-from pydub import AudioSegment
+
 import argparse
 
+from pydub import AudioSegment
 
-class TooStrictSegmentRulesException(Exception):
-    pass
-
-
-class Settings:
-    def __init__(self, seed, duration, breath_pause_length):
-        self.seed = seed
-        self.duration = duration
-        self.breath_pause_length = breath_pause_length
-
-
-class Segment:
-    def __init__(self, segment_id, text, text_appender_symbol, audio, weight, cool_down):
-        self.id = segment_id
-        self.text = text
-        self.text_appender_symbol = text_appender_symbol
-        self.audio = audio
-        self.weight = weight
-        self.cool_down = cool_down
+from src.segment import Segment
+from src.settings import Settings
+from src.task import Task, TooStrictSegmentRulesException
+import sys
 
 
 class SegmentGenerator:
@@ -30,76 +15,7 @@ class SegmentGenerator:
         self.length = length
 
     def generate_breath_pause(self):
-        return Segment('silent', '', '', AudioSegment.silent(self.length), 0, 0)
-
-
-class Stats:
-    def __init__(self):
-        self.histogram = {}
-
-    def record_segment(self, segment):
-        if segment.id not in self.histogram:
-            self.histogram[segment.id] = 0
-        self.histogram[segment.id] += 1
-
-
-class Task:
-    def __init__(self, segments, settings, segment_generator):
-        self.segments = segments
-        self.settings = settings
-        self.segment_generator = segment_generator
-        self.MAX_ATTEMPTS = 128
-        self.total_weight = 0
-        self.result = Result()
-        self.init()
-
-    def init(self):
-        random.seed(self.settings.seed)
-        for segment in self.segments:
-            self.total_weight += segment.weight
-
-    def honours_cool_down(self, segment, relaxation):
-        offset = segment.cool_down + relaxation
-        if offset >= 0:
-            return True
-        last_added_segments = self.result.segments[-offset:]
-        return segment not in last_added_segments
-
-    def get_next_segment(self):
-        attempts = 0
-        while attempts < self.MAX_ATTEMPTS:
-            threshold = random.randint(1, self.total_weight)
-            segment = random.choice(self.segments)
-            relaxation = int(attempts / 2)
-            if segment.weight >= threshold and self.honours_cool_down(segment, relaxation):
-                return segment
-            else:
-                attempts += 1
-        raise TooStrictSegmentRulesException()
-
-    def execute(self):
-        while self.result.get_duration_in_seconds() < self.settings.duration:
-            segment = self.get_next_segment()
-            self.result.add_segment(segment)
-            self.result.add_segment(self.segment_generator.generate_breath_pause(), record_stats=False)
-
-
-class Result:
-    def __init__(self):
-        self.text = ''
-        self.audio = AudioSegment.silent(1)
-        self.segments = []
-        self.stats = Stats()
-
-    def add_segment(self, segment, record_stats=True):
-        self.segments.append(segment)
-        self.text += segment.text if self.text == '' else segment.text_appender_symbol + segment.text
-        self.audio += segment.audio
-        if record_stats:
-            self.stats.record_segment(segment)
-
-    def get_duration_in_seconds(self):
-        return self.audio.duration_seconds
+        return Segment('silent', '', '', AudioSegment.silent(self.length), None, [], [])
 
 
 def load_json(file_name):
@@ -108,23 +24,10 @@ def load_json(file_name):
         return json.loads(raw)
 
 
-def load_segments(task_file, audio_folder):
+def load_segments(task_file, audio_folder, max_time):
     segments = []
-    segment_ids = []
-    for segment in task_file["segments"]:
-        # Make sure to generate a unique segment id for each segment
-        base_segment_id = '_'.join(segment['text'].lower().split()) if 'id' not in segment else segment['id']
-        segment_id = base_segment_id
-        id_number = 1
-        while segment_id in segment_ids:
-            segment_id = base_segment_id + '_' + str(id_number)
-            id_number += 1
-        segment_ids.append(segment_id)
-
-        audio = AudioSegment.from_mp3(audio_folder + '/' + segment['audio'])
-        cool_down = 0 if 'cool_down' not in segment else segment['cool_down']
-        text_appender_symbol = '. ' if 'text_appender_symbol' not in segment else segment['text_appender_symbol']
-        segments.append(Segment(segment_id, segment['text'], text_appender_symbol, audio, segment['weight'], cool_down))
+    for segment_json in task_file["segments"]:
+        segments.append(Segment.from_json(segment_json, audio_folder, max_time))
     return segments
 
 
@@ -146,8 +49,8 @@ def load_settings(task_file, arg_duration, arg_seed):
 
 
 def load_task(task_file, audio_folder, arg_duration, arg_seed):
-    segments = load_segments(task_file, audio_folder)
     settings = load_settings(task_file, arg_duration, arg_seed)
+    segments = load_segments(task_file, audio_folder, settings.duration)
     segment_generator = SegmentGenerator(settings.breath_pause_length)
     return Task(segments, settings, segment_generator)
 
@@ -159,13 +62,17 @@ def run(args):
     arg_duration = args.duration
     arg_seed = args.seed
 
+    print('Initialising...')
     task = load_task(load_json(task_file_path), audio_folder, arg_duration, arg_seed)
+    print('Initialised')
     try:
         task.execute()
     except TooStrictSegmentRulesException as e:
         print('Could not execute task because some constraints were too strict. Perhaps lower some cool downs?')
         exit(-1)
 
+    print()
+    print()
     print(task.result.text)
     print(task.result.stats.histogram)
     task.result.audio.export(output_name + '.mp3')
