@@ -1,6 +1,8 @@
 import random
 from time import time
 
+from pydub import AudioSegment
+
 from src.logger import Logger
 from src.result import Result
 from src.timestamp import Timestamp
@@ -113,21 +115,29 @@ class Task:
         #   max_attempts and relaxation accordingly
         raise TooStrictSegmentRulesException()
 
+    def finalise(self):
+        start_time = time()
+        total = len(self.result.parts)
+        for index, part in enumerate(self.result.parts):
+            self.result.audio += part
+            elapsed_time = round(time() - start_time, 2)
+            self.logger.print_progress(index + 1, total, suffix=f'Finalising ({elapsed_time}s)', bar_length=32)
+
     def execute(self):
         start_time = time()
         while self.result.get_duration_in_seconds() < self.settings.duration:
             segment = self.get_next_segment()
             self.result.add_segment(segment)
             self.result.add_segment(self.segment_generator.generate_breath_pause(), record_stats=False)
-            # TODO: Add last defined timestamps
 
-            # Print progress to the console
-            current_length = self.result.get_duration_in_seconds()
-            total_length = self.settings.duration
+            # Calculate current progress
+            length = self.result.get_duration_in_seconds()
+            total = self.settings.duration
+            elapsed_time = round(time() - start_time, 2)
 
-            self.logger.print_progress(
-                current_length,
-                total_length,
-                prefix='Progress',
-                bar_length=32
-            )
+            self.logger.print_progress(length, total, suffix=f'Creating sample ({elapsed_time}s)', bar_length=32)
+
+        # TODO: Add the remaining segments that still have a timestamp
+        elapsed_time = round(time() - start_time, 2)
+        self.logger.print_progress(1, 1, suffix=f'Done ({elapsed_time}s)', bar_length=32)
+        self.finalise()

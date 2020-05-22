@@ -7,7 +7,6 @@ from pydub import AudioSegment
 from src.segment import Segment
 from src.settings import Settings
 from src.task import Task, TooStrictSegmentRulesException
-import sys
 
 
 class SegmentGenerator:
