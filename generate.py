@@ -67,7 +67,7 @@ def run(args):
     task.execute()
 
     print()
-    print(task.result.text)
+    print(task.result.text_string)
     print(task.result.stats.histogram)
     task.result.audio.export(output_name + '.mp3')
 

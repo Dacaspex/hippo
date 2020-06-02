@@ -5,8 +5,9 @@ from src.stats import Stats
 
 class Result:
     def __init__(self):
-        self.text = ''
         self.segments = []
+        self.text_string = ''
+        self.text_timestamp_map = []
         self.stats = Stats()
         self.audio = AudioSegment.empty()
         self.length_threshold = 10 * 60
@@ -15,7 +16,8 @@ class Result:
     def add_segment(self, segment, is_silence=False, record_stats=True):
         if not is_silence:
             self.segments.append(segment)
-            self.text += segment.text if self.text == '' else segment.text_appender_symbol + segment.text
+            self.text_string += segment.text + segment.text_appender_symbol
+            self.text_timestamp_map.append({'timestamp': self.get_duration_in_seconds(), 'text': segment.text})
         self.parts[-1] += segment.audio
         # Appending more and more segments to the current audio segment becomes slow over time.
         # Therefore, we split up the current result in parts and add new segments to the last
