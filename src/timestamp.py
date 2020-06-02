@@ -10,7 +10,7 @@ class Timestamp:
         :param Timestamp other:
         :return: True if self is before other, False otherwise
         """
-        return self.seconds < other.seconds
+        return self.seconds <= other.seconds
 
     def is_between(self, left, right):
         """

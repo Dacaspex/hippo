@@ -109,7 +109,13 @@ class Task:
 
             self.logger.print_progress(length, total, suffix=f'Creating sample ({elapsed_time}s)', bar_length=32)
 
-        # TODO: Add the remaining segments that still have a timestamp
+        # Add the remaining segments that still have a timestamp
+        for segment in self.segments:
+            if len(segment.timestamps) > 0:
+                self.result.add_segment(segment)
+                self.result.add_segment(self.breath_pause, is_silence=True, record_stats=False)
+
         elapsed_time = round(time() - start_time, 2)
         self.logger.print_progress(1, 1, suffix=f'Done ({elapsed_time}s)', bar_length=32)
+
         self.finalise()
