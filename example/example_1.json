@@ -1,0 +1,50 @@
+{
+  "settings": {
+    "seed": 123456789,
+    "duration": 20,
+    "breath_pause_length": 750
+  },
+  "segments": [
+    {
+      "text": "a",
+      "audio": "a.mp3",
+      "weight": 6,
+      "always": {
+        "weight": 10,
+        "cool_down": 0
+      }
+    },
+    {
+      "text": "b",
+      "audio": "b.mp3",
+      "sections": [
+        {
+          "weight": 20,
+          "cool_down": 0,
+          "start": {
+            "percentage": 0.2
+          },
+          "end": {
+            "percentage": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "text": "c",
+      "audio": "c.mp3",
+      "weight": 3,
+      "timestamps": [
+        {
+          "percentage": 0.4
+        },
+        {
+          "seconds": 10
+        },
+        {
+          "seconds": 20
+        }
+      ]
+    }
+  ]
+}
