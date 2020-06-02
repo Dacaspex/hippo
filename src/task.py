@@ -1,24 +1,17 @@
 import random
 from time import time
 
-from pydub import AudioSegment
-
 from src.logger import Logger
 from src.result import Result
 from src.timestamp import Timestamp
-
-
-class TooStrictSegmentRulesException(Exception):
-    pass
 
 
 class Task:
     def __init__(self, segments, settings, segment_generator):
         self.segments = segments
         self.settings = settings
-        self.segment_generator = segment_generator
+        self.breath_pause = segment_generator.generate_breath_pause()
         self.logger = Logger()
-        self.MAX_ATTEMPTS = 128  # TODO: Deduce from max cool down
         self.result = Result()
         self.init()
 
@@ -26,10 +19,10 @@ class Task:
         random.seed(self.settings.seed)
 
     def honours_cool_down(self, segment, cool_down, relaxation):
-        offset = cool_down + relaxation
+        offset = -cool_down + relaxation
         if offset >= 0:
             return True
-        last_added_segments = self.result.segments[-offset:]
+        last_added_segments = self.result.segments[offset:]
         return segment not in last_added_segments
 
     def get_next_segment(self):
@@ -61,59 +54,38 @@ class Task:
         # - That have an 'always occurrence' defined, i.e. they should always be included
         # - That have a section that the current timestamp falls into, i.e. they are
         #   momentarily active.
-        # If both options are YES, then the weight and cool down in the section has higher
-        # priority. Therefore, we must compute the total weight now and save the selected
-        # weight and cool down per segment (coming from 'always occurrence' or the section)
+        # If both statements are true, the section options take precedence over the 'always occurrence'
         candidates = []
-        total_weight = 0
         for segment in self.segments:
-            # Check whether there is a section that is currently active, i.e. the current timestamp
-            # falls between the start and end of the section
-            section = None
-            for candidate_section in segment.sections:
-                if current_timestamp.is_between(candidate_section.start, candidate_section.end):
-                    section = candidate_section
-                    break
-
-            # If there is an active section, then we must use those weight and cool down values
-            # else, we must use those values from the 'always occurrence' if that exists
-            # if both do not exist, then we simply do not add the segment to the candidates
+            section = segment.get_section_by_timestamp(current_timestamp)
             if section is not None:
                 candidates.append({'segment': segment, 'weight': section.weight, 'cool_down': section.cool_down})
-                total_weight += section.weight
             elif segment.has_always_occurrence():
-                # Fallback, if the section is None or if there is only an always occurrence component
                 candidates.append({
                     'segment': segment,
                     'weight': segment.always_occurrence.weight,
                     'cool_down': segment.always_occurrence.cool_down
                 })
-                total_weight += segment.always_occurrence.weight
 
-        # Now that we have a list of candidate segments, we must pick one according
-        # to the approximate probability distribution defined by the weights
-        attempts = 0
-        while attempts < self.MAX_ATTEMPTS:
-            # Get the random values
-            threshold = random.randint(1, total_weight)
-            candidate = random.choice(candidates)
+        # Filter out segments that do not honour the cool down with relaxation
+        filtered_candidates = []
+        relaxation = -1
+        while len(filtered_candidates) == 0:
+            filtered_candidates = []
+            relaxation += 1
+            for entry in candidates:
+                segment, cool_down = entry['segment'], entry['cool_down']
+                if self.honours_cool_down(segment, cool_down, relaxation):
+                    filtered_candidates.append(entry)
 
-            # Extract the values we packed earlier
-            segment = candidate['segment']
-            weight = candidate['weight']
-            cool_down = candidate['cool_down']
+        # Generate distribution, according to their weight
+        distribution = []
+        for entry in filtered_candidates:
+            segment, weight = entry['segment'], entry['weight']
+            distribution.extend([segment for _ in range(weight)])
 
-            # To avoid a deadlock situation (i.e. no segment can be added because the cool downs
-            # are too big), we reduce the cool down slightly after x attempts
-            relaxation = int(attempts / 8)
-
-            if weight >= threshold and self.honours_cool_down(segment, cool_down, relaxation):
-                return segment
-            else:
-                attempts += 1
-        # TODO: This can be avoided by computing the maximum cool down and adjust the
-        #   max_attempts and relaxation accordingly
-        raise TooStrictSegmentRulesException()
+        # Finally, pick random value from list
+        return random.choice(distribution)
 
     def finalise(self):
         start_time = time()
@@ -128,7 +100,7 @@ class Task:
         while self.result.get_duration_in_seconds() < self.settings.duration:
             segment = self.get_next_segment()
             self.result.add_segment(segment)
-            self.result.add_segment(self.segment_generator.generate_breath_pause(), record_stats=False)
+            self.result.add_segment(self.breath_pause, is_silence=True, record_stats=False)
 
             # Calculate current progress
             length = self.result.get_duration_in_seconds()

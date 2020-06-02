@@ -4,6 +4,7 @@ input/
 virtualenv/
 export.*
 *.mp3
+!example/audio/*
 .local/*
 
 # Byte-compiled / optimized / DLL files

@@ -40,6 +40,16 @@ class Segment:
     def has_always_occurrence(self):
         return self.always_occurrence is not None
 
+    def get_section_by_timestamp(self, timestamp):
+        """
+        :param Timestamp timestamp:
+        :return: A section such that section.start <= timestamp section.end, else None
+        """
+        for section in self.sections:
+            if timestamp.is_between(section.start, section.end):
+                return section
+        return None
+
     @staticmethod
     def from_json(json, audio_folder, max_time):
         segment_id = extract('id', json, json['text'])

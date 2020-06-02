@@ -12,9 +12,10 @@ class Result:
         self.length_threshold = 10 * 60
         self.parts = [AudioSegment.empty()]
 
-    def add_segment(self, segment, record_stats=True):
-        self.segments.append(segment)
-        self.text += segment.text if self.text == '' else segment.text_appender_symbol + segment.text
+    def add_segment(self, segment, is_silence=False, record_stats=True):
+        if not is_silence:
+            self.segments.append(segment)
+            self.text += segment.text if self.text == '' else segment.text_appender_symbol + segment.text
         self.parts[-1] += segment.audio
         # Appending more and more segments to the current audio segment becomes slow over time.
         # Therefore, we split up the current result in parts and add new segments to the last

@@ -6,7 +6,7 @@ from pydub import AudioSegment
 
 from src.segment import Segment
 from src.settings import Settings
-from src.task import Task, TooStrictSegmentRulesException
+from src.task import Task
 
 
 class SegmentGenerator:
@@ -64,13 +64,8 @@ def run(args):
     print('Initialising...')
     task = load_task(load_json(task_file_path), audio_folder, arg_duration, arg_seed)
     print('Initialised')
-    try:
-        task.execute()
-    except TooStrictSegmentRulesException as e:
-        print('Could not execute task because some constraints were too strict. Perhaps lower some cool downs?')
-        exit(-1)
+    task.execute()
 
-    print()
     print()
     print(task.result.text)
     print(task.result.stats.histogram)
