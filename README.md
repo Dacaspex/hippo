@@ -1,5 +1,5 @@
-# text-generator
-Text generator based on samples with a given probability
+# Hippo
+A controlled randomised audio/text generator. 
 
 # Usage
 The program takes two arguments: the location of the task file, and the root directory of the audio
@@ -24,7 +24,7 @@ You can find a guide to install it on Windows [here](http://blog.gregzaal.com/ho
 **Note:** Sometimes a reboot of your system is required.  
 
 ## Dependencies
-Upon up a python virtual environment and install the packages with the following command:
+Open up a python virtual environment and install the packages with the following command:
 ```
 pip install -r requirements.txt
 ```
