@@ -4,7 +4,7 @@ import argparse
 
 from pydub import AudioSegment
 
-from src.effect import OverlayEffect
+from src.effect import OverlayEffect, PostVolumeGainEffect
 from src.segment import Segment
 from src.settings import Settings
 from src.task import Task
@@ -55,6 +55,8 @@ def load_effects(task_file, audio_folder):
         effect_type = extract('type', effect_json, 'none')
         if effect_type == 'overlay':
             effects.append(OverlayEffect.from_json(effect_json, audio_folder))
+        elif effect_type == 'post_volume_gain':
+            effects.append(PostVolumeGainEffect.from_json(effect_json))
         else:
             print(f'unknown effect {effect_type}')
     return effects

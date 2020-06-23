@@ -6,6 +6,10 @@
   },
   "effects": [
     {
+      "type": "post_volume_gain",
+      "gain": -5
+    },
+    {
       "type": "overlay",
       "audio": "a.mp3",
       "gain": 0
