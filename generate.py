@@ -4,9 +4,11 @@ import argparse
 
 from pydub import AudioSegment
 
+from src.effect import OverlayEffect
 from src.segment import Segment
 from src.settings import Settings
 from src.task import Task
+from src.util import extract
 
 
 class SegmentGenerator:
@@ -47,11 +49,23 @@ def load_settings(task_file, arg_duration, arg_seed):
     return Settings(seed, duration, breath_pause_length)
 
 
+def load_effects(task_file, audio_folder):
+    effects = []
+    for effect_json in extract('effects', task_file, []):
+        effect_type = extract('type', effect_json, 'none')
+        if effect_type == 'overlay':
+            effects.append(OverlayEffect.from_json(effect_json, audio_folder))
+        else:
+            print(f'unknown effect {effect_type}')
+    return effects
+
+
 def load_task(task_file, audio_folder, arg_duration, arg_seed):
     settings = load_settings(task_file, arg_duration, arg_seed)
     segments = load_segments(task_file, audio_folder, settings.duration)
     segment_generator = SegmentGenerator(settings.breath_pause_length)
-    return Task(segments, settings, segment_generator)
+    effects = load_effects(task_file, audio_folder)
+    return Task(segments, settings, segment_generator, effects)
 
 
 def run(args):

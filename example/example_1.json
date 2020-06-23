@@ -4,6 +4,13 @@
     "duration": 20,
     "breath_pause_length": 750
   },
+  "effects": [
+    {
+      "type": "overlay",
+      "audio": "a.mp3",
+      "gain": 0
+    }
+  ],
   "segments": [
     {
       "text": "a",

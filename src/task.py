@@ -7,10 +7,11 @@ from src.timestamp import Timestamp
 
 
 class Task:
-    def __init__(self, segments, settings, segment_generator):
+    def __init__(self, segments, settings, segment_generator, effects):
         self.segments = segments
         self.settings = settings
         self.breath_pause = segment_generator.generate_breath_pause()
+        self.effects = effects
         self.logger = Logger()
         self.result = Result()
         self.init()
@@ -89,11 +90,18 @@ class Task:
 
     def finalise(self):
         start_time = time()
-        total = len(self.result.parts)
-        for index, part in enumerate(self.result.parts):
+        total = len(self.result.parts) + len(self.effects)
+        progress = 1
+        for part in self.result.parts:
             self.result.audio += part
             elapsed_time = round(time() - start_time, 2)
-            self.logger.print_progress(index + 1, total, suffix=f'Finalising ({elapsed_time}s)', bar_length=32)
+            self.logger.print_progress(progress, total, suffix=f'Finalising ({elapsed_time}s)', bar_length=32)
+            progress += 1
+        for effect in self.effects:
+            effect.post_finalise(self.result)
+            elapsed_time = round(time() - start_time, 2)
+            self.logger.print_progress(progress, total, suffix=f'Finalising ({elapsed_time}s)', bar_length=32)
+            progress += 1
 
     def execute(self):
         start_time = time()
