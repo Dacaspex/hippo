@@ -9,6 +9,7 @@ from src.segment import Segment
 from src.settings import Settings
 from src.task import Task
 from src.util import extract
+from src.visualisations.Visualiser import Visualiser
 
 
 class SegmentGenerator:
@@ -76,11 +77,16 @@ def run(args):
     output_name = args.output
     arg_duration = args.duration
     arg_seed = args.seed
+    show_visualisation = args.visualise
 
     print('Initialising...')
     task = load_task(load_json(task_file_path), audio_folder, arg_duration, arg_seed)
     print('Initialised')
     task.execute()
+
+    if show_visualisation:
+        visualiser = Visualiser(task.result)
+        visualiser.show_visualisation()
 
     print()
     print(task.result.text_string)
@@ -114,6 +120,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '-s', '--seed',
         help='Sets the seed for the psuedo-random number generator. This overrides the value in the task file'
+    )
+    parser.add_argument(
+        '-i', '--visualise',
+        help='Shows visualisation(s) of the generated audio file',
+        action='store_const',
+        const=True,
+        default=False
     )
 
     run(parser.parse_args())
