@@ -78,11 +78,15 @@ def run(args):
     arg_duration = args.duration
     arg_seed = args.seed
     show_visualisation = args.visualise
+    generate_preview = args.preview
 
     print('Initialising...')
     task = load_task(load_json(task_file_path), audio_folder, arg_duration, arg_seed)
     print('Initialised')
-    task.execute()
+    if generate_preview:
+        task.preview()
+    else:
+        task.execute()
 
     if show_visualisation:
         visualiser = Visualiser(task.result)
@@ -124,6 +128,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '-i', '--visualise',
         help='Shows visualisation(s) of the generated audio file',
+        action='store_const',
+        const=True,
+        default=False
+    )
+    parser.add_argument(
+        '-p', '--preview',
+        help='With this flag enabled, a preview of all segments in the task file is generated',
         action='store_const',
         const=True,
         default=False

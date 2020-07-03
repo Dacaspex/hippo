@@ -20,6 +20,11 @@ class Task:
     def init(self):
         random.seed(self.settings.seed)
 
+    def preview(self):
+        for segment in self.segments:
+            self.result.add_segment(segment)
+        self.finalise()
+
     def finalise(self):
         start_time = time()
         total = len(self.result.parts) + len(self.effects)
