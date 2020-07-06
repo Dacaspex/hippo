@@ -82,7 +82,7 @@ def run(args):
 
     print('Initialising...')
     task = load_task(load_json(task_file_path), audio_folder, arg_duration, arg_seed)
-    print('Initialised')
+    print('Initialisation complete.')
     if generate_preview:
         task.preview()
     else:
@@ -95,7 +95,9 @@ def run(args):
     print()
     print(task.result.text_string)
     print(task.result.stats.histogram)
+    print(f'Exporting file to \'{output_name}.mp3\'...')
     task.result.audio.export(output_name + '.mp3')
+    print('Export complete.')
 
 
 if __name__ == '__main__':
