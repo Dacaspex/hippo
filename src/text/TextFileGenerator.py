@@ -1,3 +1,6 @@
+import datetime
+import math
+
 from src.util import rpad_string, lrpad_string
 
 
@@ -10,15 +13,27 @@ class CharacterSet:
 
 
 class TranscriptFileGenerator:
-    def __init__(self, text, meta, character_set=None):
-        self.text = text
+    def __init__(self, result, meta, character_set=None):
+        self.result = result
         self.meta = meta
         self.character_set = CharacterSet.minimal if character_set is None else character_set
 
+    def get_duration_as_string(self):
+        total_seconds = self.result.get_duration_in_seconds()
+        minutes = math.floor(total_seconds / 60)
+        seconds = round(total_seconds - (minutes * 60))
+        return f'{minutes}m{seconds}s' if minutes > 0 else f'{seconds}s'
+
     def compile(self):
-        meta_text = (PropertiesTextTemplate(self.meta)).compile()
-        block_text = (BlockTextTemplate(meta_text, 'info', self.character_set)).compile()
-        return block_text + '\n\n' + self.text
+        file_info = {
+            'date': datetime.date.today(),
+            'duration': self.get_duration_as_string()
+        }
+        meta = {**self.meta, **file_info}
+        text = (ConstrainedWidthTextTemplate(self.result.text_string, 100)).compile()
+        meta_text = (PropertiesTextTemplate(meta)).compile()
+        meta_block_text = (BlockTextTemplate(meta_text, 'info', self.character_set, min_length=100)).compile()
+        return meta_block_text + '\n\n' + text + '\n'
 
 
 class BlockTextTemplate:
@@ -99,4 +114,20 @@ class PropertiesTextTemplate:
                    + lrpad_string(self.property_separator, ' ', self.spacing) \
                    + str(value)
             lines.append(text)
+        return '\n'.join(lines)
+
+
+class ConstrainedWidthTextTemplate:
+    def __init__(self, text, max_width):
+        self.text = text
+        self.max_width = max_width
+
+    def compile(self):
+        parts = self.text.split(' ')
+        lines = [parts.pop(0)]
+        for part in parts:
+            if len(lines[-1]) + len(part) <= self.max_width:
+                lines[-1] += f' {part}'
+            else:
+                lines.append(part)
         return '\n'.join(lines)

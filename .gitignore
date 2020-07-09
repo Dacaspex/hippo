@@ -6,6 +6,8 @@ export.*
 *.mp3
 !example/audio/*
 .local/*
+meta.json
+output.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

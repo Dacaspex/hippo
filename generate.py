@@ -8,6 +8,7 @@ from src.effect import OverlayEffect, PostVolumeGainEffect
 from src.segment import Segment
 from src.settings import Settings
 from src.task import Task
+from src.text.TextFileGenerator import TranscriptFileGenerator
 from src.util import extract
 from src.visualisations.Visualiser import Visualiser
 
@@ -79,6 +80,7 @@ def run(args):
     arg_seed = args.seed
     show_visualisation = args.visualise
     generate_preview = args.preview
+    no_text_file = args.no_text
 
     print('Initialising...')
     task = load_task(load_json(task_file_path), audio_folder, arg_duration, arg_seed)
@@ -92,9 +94,23 @@ def run(args):
         visualiser = Visualiser(task.result)
         visualiser.show_visualisation()
 
-    print()
-    print(task.result.text_string)
+    # Simple visualisation
     print(task.result.stats.histogram)
+
+    # Transcript export
+    if not no_text_file:
+        meta = {}
+        try:
+            meta = load_json('meta.json')
+        except Exception:
+            print('No meta.json file found in working directory')
+        generator = TranscriptFileGenerator(task.result, meta)
+        text = generator.compile()
+        with open(f'{output_name}.txt', 'w') as handle:
+            print(f'Exporting transcript to \'{output_name}.txt\'...')
+            handle.write(text)
+
+    # Audio export
     print(f'Exporting file to \'{output_name}.mp3\'...')
     task.result.audio.export(output_name + '.mp3')
     print('Export complete.')
@@ -115,7 +131,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '-o', '--output',
-        help='The name of the created audio file',
+        help='The name of the created audio and text file',
         default='output'
     )
     parser.add_argument(
@@ -137,6 +153,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '-p', '--preview',
         help='With this flag enabled, a preview of all segments in the task file is generated',
+        action='store_const',
+        const=True,
+        default=False
+    )
+    parser.add_argument(
+        '--no-text',
+        help='With this flag enabled, no text file will be generated',
         action='store_const',
         const=True,
         default=False
