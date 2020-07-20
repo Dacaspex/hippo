@@ -23,6 +23,7 @@ class Task:
     def preview(self):
         for segment in self.segments:
             self.result.add_segment(segment)
+            self.result.add_segment(self.breath_pause, is_silence=True, record_stats=False)
         self.finalise()
 
     def finalise(self):
